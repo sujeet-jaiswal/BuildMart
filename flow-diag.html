@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BuildMart AI – Ecosystem Flow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans:['Inter','sans-serif'], serif:['Playfair Display','serif'] },
+          colors: {
+            brand: { 400:'#f87171',500:'#ef4444',600:'#dc2626',700:'#b91c1c',800:'#991b1b' },
+            navy: { 700:'#334155',800:'#1e293b',900:'#0f172a',950:'#020617' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family:'Inter',sans-serif; background:#020617; overflow-x:hidden; }
+    h1,h2,h3 { font-family:'Playfair Display',serif; }
+
+    /* Animated gradient background */
+    .bg-mesh {
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(220,38,38,0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(59,130,246,0.08), transparent),
+        radial-gradient(ellipse 60% 40% at 20% 80%, rgba(16,185,129,0.08), transparent),
+        #020617;
+    }
+
+    /* Flow line animations */
+    @keyframes flowDown {
+      0% { stroke-dashoffset: 20; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes flowUp {
+      0% { stroke-dashoffset: -20; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes flowRight {
+      0% { stroke-dashoffset: 20; }
+      100% { stroke-dashoffset: 0; }
+    }
+    .flow-down { stroke-dasharray: 8 12; animation: flowDown 1s linear infinite; }
+    .flow-up { stroke-dasharray: 8 12; animation: flowUp 1s linear infinite; }
+    .flow-right { stroke-dasharray: 8 12; animation: flowRight 1s linear infinite; }
+
+    /* Pulse ring */
+    @keyframes pulseRing {
+      0% { transform:scale(1); opacity:0.6; }
+      100% { transform:scale(2.2); opacity:0; }
+    }
+    .pulse-ring { animation: pulseRing 2s ease-out infinite; }
+
+    /* Glow */
+    @keyframes glowPulse {
+      0%,100% { filter:drop-shadow(0 0 15px rgba(220,38,38,0.4)); }
+      50% { filter:drop-shadow(0 0 30px rgba(220,38,38,0.7)); }
+    }
+    .glow-pulse { animation: glowPulse 3s ease-in-out infinite; }
+
+    /* Node hover */
+    .flow-node {
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+    .flow-node:hover {
+      transform: translateY(-6px) scale(1.05);
+    }
+    .flow-node:hover .node-glow {
+      opacity: 1;
+    }
+
+    /* Fade in */
+    @keyframes fadeInUp {
+      from { opacity:0; transform:translateY(30px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+    .fade-in { opacity:0; animation: fadeInUp 0.8s cubic-bezier(0.16,1,0.3,1) forwards; }
+    .d1 { animation-delay:0.1s } .d2 { animation-delay:0.2s }
+    .d3 { animation-delay:0.3s } .d4 { animation-delay:0.5s }
+    .d5 { animation-delay:0.7s } .d6 { animation-delay:0.9s }
+    .d7 { animation-delay:1.1s } .d8 { animation-delay:1.3s }
+
+    /* Data particle */
+    @keyframes particle {
+      0% { offset-distance:0%; opacity:0; }
+      10% { opacity:1; }
+      90% { opacity:1; }
+      100% { offset-distance:100%; opacity:0; }
+    }
+    .data-particle {
+      offset-path: path(var(--path));
+      animation: particle var(--dur, 3s) linear infinite;
+      animation-delay: var(--delay, 0s);
+    }
+
+    /* Tooltip */
+    .tip {
+      position: absolute;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      width: 220px;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.3s ease;
+      z-index: 50;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .flow-node:hover .tip {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Layer label */
+    @keyframes slideRight {
+      from { transform:translateX(-20px); opacity:0; }
+      to { transform:translateX(0); opacity:1; }
+    }
+    .layer-label {
+      animation: slideRight 0.6s ease forwards;
+      opacity: 0;
+    }
+
+    /* Central hub rotate */
+    @keyframes slowSpin {
+      from { transform:rotate(0deg); }
+      to { transform:rotate(360deg); }
+    }
+    .slow-spin { animation: slowSpin 30s linear infinite; }
+
+    /* Connection highlight */
+    .conn-group { transition: opacity 0.3s; }
+    .flow-node:hover ~ .conn-group,
+    .flow-node:hover + svg .conn-group { opacity: 0.3; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:#334155; border-radius:3px; }
+
+    /* Mobile */
+    @media (max-width:768px) {
+      .flow-node:hover { transform:translateY(-4px) scale(1.02); }
+      .tip { display:none; }
+    }
+  </style>
+</head>
+<body class="bg-mesh min-h-screen text-white">
+
+  <!-- Header -->
+  <header class="text-center pt-12 pb-6 px-4 fade-in d1">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[11px] font-semibold text-brand-400 uppercase tracking-[0.2em] mb-4">
+      <span class="w-2 h-2 bg-brand-500 rounded-full animate-pulse"></span>
+      Ecosystem Architecture
+    </div>
+    <h1 class="text-3xl md:text-5xl font-bold tracking-tight">
+      BuildMart <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-orange-400">AI</span> Flow
+    </h1>
+    <p class="text-slate-400 text-sm md:text-base mt-3 max-w-2xl mx-auto leading-relaxed">
+      Connecting the entire construction supply chain — from manufacturers to end users — powered by AI-driven intelligence at every step.
+    </p>
+  </header>
+
+  <!-- Main Diagram -->
+  <main class="relative max-w-6xl mx-auto px-4 pb-20">
+
+    <!-- SVG Connections Layer -->
+    <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index:1" id="connectionsSvg">
+      <defs>
+        <!-- Arrow markers -->
+        <marker id="arrowRed" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626" opacity="0.7"/>
+        </marker>
+        <marker id="arrowBlue" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" opacity="0.7"/>
+        </marker>
+        <marker id="arrowGreen" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" opacity="0.7"/>
+        </marker>
+        <marker id="arrowAmber" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b" opacity="0.7"/>
+        </marker>
+        <marker id="arrowPurple" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6" opacity="0.7"/>
+        </marker>
+        <marker id="arrowCyan" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#06b6d4" opacity="0.7"/>
+        </marker>
+        <!-- Glow filter -->
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+    </svg>
+
+    <!-- ====== LAYER 1: SUPPLY SIDE ====== -->
+    <div class="relative" style="z-index:10">
+
+      <!-- Layer Label -->
+      <div class="layer-label flex items-center gap-3 mb-6" style="animation-delay:0.2s">
+        <div class="w-8 h-[2px] bg-gradient-to-r from-brand-600 to-transparent"></div>
+        <span class="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-400">Supply Side</span>
+      </div>
+
+      <!-- Manufacturers -->
+      <div class="flex justify-center mb-3 fade-in d2">
+        <div class="flow-node relative group" id="node-mfr">
+          <div class="node-glow absolute -inset-3 bg-gradient-to-br from-blue-500/10 to-blue-500/0 rounded-3xl blur-xl opacity-0 transition-opacity duration-500"></div>
+          <div class="relative bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl px-6 md:px-10 py-4 md:py-5 border border-blue-500/30 shadow-lg shadow-blue-500/10">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center">
+                <span class="iconify text-2xl text-blue-200" data-icon="mdi:factory"></span>
+              </div>
+              <div>
+                <p class="font-bold text-base md:text-lg text-white">Manufacturers</p>
+                <p class="text-[10px] text-blue-200 font-medium">Ultratech · Tata · ACC · Kajaria</p>
+              </div>
+            </div>
+          </div>
+          <div class="tip -bottom-2 left-1/2 -translate-x-1/2 translate-y-full">
+            <p class="font-semibold text-blue-300 mb-1">🏭 Manufacturers</p>
+            <p class="text-slate-300">Cement plants, steel mills, tile factories producing construction materials at scale.</p>
+            <div class="mt-2 flex gap-2 flex-wrap">
+              <span class="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-[10px]">5,000+</span>
+              <span class="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-[10px]">Pan India</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow MFR → Dist -->
+      <div class="flex justify-center my-1 fade-in d2">
+        <svg width="40" height="36" class="overflow-visible"><line x1="20" y1="0" x2="20" y2="30" stroke="#3b82f6" stroke-width="2" class="flow-down" marker-end="url(#arrowBlue)"/></svg>
+      </div>
+
+      <!-- Distributors -->
+      <div class="flex justify-center mb-3 fade-in d3">
+        <div class="flow-node relative group" id="node-dist">
+          <div class="node-glow absolute -inset-3 bg-gradient-to-br from-indigo-500/10 to-indigo-500/0 rounded-3xl blur-xl opacity-0 transition-opacity duration-500"></div>
+          <div class="relative bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-2xl px-6 md:px-10 py-4 md:py-5 border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center">
+                <span class="iconify text-2xl text-indigo-200" data-icon="mdi:truck-delivery"></span>
+              </div>
+              <div>
+                <p class="font-bold text-base md:text-lg text-white">Distributors</p>
+                <p class="text-[10px] text-indigo-200 font-medium">Regional · State · Zonal</p>
+              </div>
+            </div>
+          </div>
+          <div class="tip -bottom-2 left-1/2 -translate-x-1/2 translate-y-full">
+            <p class="font-semibold text-indigo-300 mb-1">🚛 Distributors</p>
+            <p class="text-slate-300">Regional distributors who buy in bulk from manufacturers and supply to dealers across territories.</p>
+            <div class="mt-2 flex gap-2 flex-wrap">
+              <span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded text-[10px]">15,000+</span>
+              <span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded text-[10px]">State-level</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow Dist → Dealers -->
+      <div class="flex justify-center my-1 fade-in d3">
+        <svg width="40" height="36" class="overflow-visible"><line x1="20" y1="0" x2="20" y2="30" stroke="#6366f1" stroke-width="2" class="flow-down" marker-end="url(#arrowBlue)"/></svg>
+      </div>
+
+      <!-- Dealers -->
+      <div class="flex justify-center mb-4 fade-in d4">
+        <div class="flow-node relative group" id="node-dealer">
+          <div class="node-glow absolute -inset-3 bg-gradient-to-br from-violet-500/10 to-violet-500/0 rounded-3xl blur-xl opacity-0 transition-opacity duration-500"></div>
+          <div class="relative bg-gradient-to-br from-violet-600 to-violet-800 rounded-2xl px-6 md:px-10 py-4 md:py-5 border border-violet-500/30 shadow-lg shadow-violet-500/10">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center">
+                <span class="iconify text-2xl text-violet-200" data-icon="mdi:store"></span>
+              </div>
+              <div>
+                <p class="font-bold text-base md:text-lg text-white">Dealers</p>
+                <p class="text-[10px] text-violet-200 font-medium">Retail · Wholesale · Local</p>
+              </div>
+            </div>
+          </div>
+          <div class="tip -bottom-2 left-1/2 -translate-x-1/2 translate-y-full">
+            <p class="font-semibold text-violet-300 mb-1">🏪 Dealers</p>
+            <p class="text-slate-300">Local retail & wholesale dealers who sell directly to contractors and walk-in buyers.</p>
+            <div class="mt-2 flex gap-2 flex-wrap">
+              <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 rounded text-[10px]">50,000+</span>
+              <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 rounded text-[10px]">City-level</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow Dealers → BuildMart (big) -->
+      <div class="flex justify-center my-2 fade-in d4">
+        <div class="flex flex-col items-center">
+          <svg width="40" height="50" class="overflow-visible">
+            <line x1="20" y1="0" x2="20" y2="44" stroke="#8b5cf6" stroke-width="2.5" class="flow-down" marker-end="url(#arrowPurple)"/>
+          </svg>
+          <span class="text-[9px] text-violet-400 font-semibold uppercase tracking-wider mt-1">Supply Feed</span>
+        </div>
+      </div>
+
+      <!-- ====== LAYER 2: BUILDMART AI HUB ====== -->
+      <div class="my-6 fade-in d5">
+        <!-- Divider -->
+        <div class="relative flex items-center justify-center mb-8">
+          <div class="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-500/30 to-transparent"></div>
+          <div class="relative bg-navy-950 px-6 py-2">
+            <span class="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-400">Intelligence Layer</span>
+          </div>
+        </div>
+
+        <!-- Central Hub -->
+        <div class="flex justify-center">
+          <div class="relative glow-pulse" id="node-hub">
+            <!-- Rotating ring -->
+            <div class="absolute -inset-6 md:-inset-8">
+              <div class="slow-spin w-full h-full rounded-full border-2 border-dashed border-brand-500/20"></div>
+            </div>
+            <!-- Pulse rings -->
+            <div class="absolute -inset-4 md:-inset-6 rounded-full border border-brand-500/30 pulse-ring"></div>
+            <div class="absolute -inset-4 md:-inset-6 rounded-full border border-brand-500/20 pulse-ring" style="animation-delay:0.7s"></div>
+            <!-- Main card -->
+            <div class="relative bg-gradient-to-br from-brand-600 via-brand-700 to-red-900 rounded-3xl px-8 md:px-16 py-6 md:py-8 border border-brand-400/30 shadow-2xl shadow-brand-500/20">
+              <div class="text-center">
+                <div class="w-16 h-16 md:w-20 md:h-20 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-3 border border-white/10">
+                  <span class="iconify text-4xl md:text-5xl text-white" data-icon="mdi:brain"></span>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-bold text-white tracking-tight">BuildMart AI</h2>
+                <p class="text-red-200 text-xs md:text-sm mt-1 font-medium">Intelligent Supply Chain Engine</p>
+                <div class="flex items-center justify-center gap-3 md:gap-4 mt-4 flex-wrap">
+                  <span class="px-2.5 py-1 bg-white/10 rounded-lg text-[10px] font-semibold text-white border border-white/10">Price Intel</span>
+                  <span class="px-2.5 py-1 bg-white/10 rounded-lg text-[10px] font-semibold text-white border border-white/10">Match AI</span>
+                  <span class="px-2.5 py-1 bg-white/10 rounded-lg text-[10px] font-semibold text-white border border-white/10">Demand Forecast</span>
+                  <span class="px-2.5 py-1 bg-white/10 rounded-lg text-[10px] font-semibold text-white border border-white/10">Fraud Detect</span>
+                  <span class="px-2.5 py-1 bg-white/10 rounded-lg text-[10px] font-semibold text-white border border-white/10">Quality Check</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Support Layer Cards (below hub) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mt-8 max-w-3xl mx-auto">
+          <!-- Finance -->
+          <div class="flow-node relative group fade-in d6">
+            <div class="node-glow absolute -inset-3 bg-gradient-to-br from-amber-500/10 to-amber-500/0 rounded-2xl blur-xl opacity-0 transition-opacity duration-500"></div>
+            <div class="relative bg-gradient-to-br from-amber-600/90 to-amber-800/90 backdrop-blur-sm rounded-xl p-4 border border-amber-500/30">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span class="iconify text-xl text-amber-200" data-icon="mdi:finance"></span>
+                </div>
+                <div>
+                  <p class="font-bold text-sm text-white">Finance</p>
+                  <p class="text-[9px] text-amber-200">Credit · Insurance · Payments</p>
+                </div>
+              </div>
+              <div class="mt-3 space-y-1.5">
+                <div class="flex items-center gap-2 text-[10px] text-amber-100"><span class="iconify text-xs" data-icon="mdi:check-circle"></span>Supply chain financing</div>
+                <div class="flex items-center gap-2 text-[10px] text-amber-100"><span class="iconify text-xs" data-icon="mdi:check-circle"></span>Invoice discounting</div>
+                <div class="flex items-center gap-2 text-[10px] text-amber-100"><span class="iconify text-xs" data-icon="mdi:check-circle"></span>EMI & credit line</div>
+              </div>
+            </div>
+            <div class="tip -bottom-2 left-1/2 -translate-x-1/2 translate-y-full">
+              <p class="font-semibold text-amber-300 mb-1">💰 Finance Layer</p>
+              <p class="text-slate-300">AI-powered credit scoring, instant financing for suppliers, and flexible payment options for buyers.</p>
+            </div>
+          </div>
+
+          <!-- Logistics -->
+          <div class="flow-node relative group fade-in d7">
+            <div class="node-glow absolute -inset-3 bg-gradient-to-br from-emerald-500/10 to-emerald-500/0 rounded-2xl blur-xl opacity-0 transition-opacity duration-500"></div>
+            <div class="relative bg-gradient-to-br from-emerald-600/90 to-emerald-800/90 backdrop-blur-sm rounded-xl p-4 border border-emerald-500/30">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span class="iconify text-xl text-emerald-200" data-icon="mdi:truck-fast-outline"></span>
+                </div>
+                <div>
+                  <p class="font-bold text-sm text-white">Logistics</p>
+                  <p class="text-[9px] text-emerald-200">Tracking · Fleet · Routes</p>
+                </div>
+              </div>
+              <div class="mt-3 space-y-1.5">
+                <div class="flex items-center gap-2 text-[10px] text-emerald-100"><span class="iconify text-xs" data-icon="mdi:check-circle"></span>Real-time GPS tracking</div>
+                <div class="flex items-center gap-2 text-[10px] text-emerald-100"><span class="iconify text-xs" data-icon="mdi:check-circle"></span>Route optimization</div>
+                <div class="flex items-center gap-2 text-[10px] text-emerald-100"><span class="iconify text-xs" data-icon="mdi:check-circle"></span>Multi-modal transport</div>
+              </div>
+            </div>
+            <div class="tip -bottom-2 left-1/2 -translate-x-1/2 translate-y-full">
+              <p class="font-semibold text-emerald-300 mb-1">🚚 Logistics Layer</p>
+              <p class="text-slate-300">End-to-end delivery management with live tracking, fleet optimization, and automated dispatch.</p>
+            </div>
+          </div>
+
+          <!-- Analytics -->
+          <div class="flow-node relative group fade-in d8">
+            <div class="node-glow absolute -inset-3 bg-gradient-to-br from-cyan-500/10 to-cyan-500/0 rounded-2xl blur-xl opacity-0 transition-opacity duration-500"></div>
+            <div class="relative bg-gradient-to-br from-cyan-600/90 to-cyan-800/90 backdrop-blur-sm rounded-xl p-4 border border-cyan-500/30">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span class="iconify text-xl text-cyan-200" data-icon="mdi:chart-areaspline"></span>
+                </div>
+                <div>
+                  <p class="font-bold text-sm text-white">Analytics</p>
+                  <p class="text-[9px] text-cyan-200">Insights · Reports · ML</p>
+                </div>
+              </div>
+              <div class="mt-3 space-y-1.5">
+                <div class="flex items-center gap-2 text-[10px] text-cyan-100"><span class="iconify text-xs" data-icon="mdi:check-circle"></span>Price trend analysis</div>
+                <div class="flex items-center gap-2 text-[10px] text-cyan-100"><span class="iconify text-xs" data-icon="mdi:check-circle"></span>Demand forecasting</div>
+                <div class="flex items-center gap-2 text-[10px] text-cyan-100"><span class="iconify text-xs" data-icon="mdi:check-circle"></span>Seller dashboard</div>
+              </div>
+            </div>
+            <div class="tip -bottom-2 left-1/2 -translate-x-1/2 translate-y-full">
+              <p class="font-semibold text-cyan-300 mb-1">📊 Analytics Layer</p>
+              <p class="text-slate-300">ML-driven market intelligence, price prediction, demand forecasting, and business insights.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Arrows: Hub → Support -->
+        <div class="flex justify-center my-4 fade-in d6">
+          <svg width="200" height="30" class="overflow-visible">
+            <line x1="30" y1="0" x2="70" y2="24" stroke="#f59e0b" stroke-width="1.5" class="flow-down" marker-end="url(#arrowAmber)" opacity="0.5"/>
+            <line x1="100" y1="0" x2="100" y2="24" stroke="#10b981" stroke-width="1.5" class="flow-down" marker-end="url(#arrowGreen)" opacity="0.5"/>
+            <line x1="170" y1="0" x2="130" y2="24" stroke="#06b6d4" stroke-width="1.5" class="flow-down" marker-end="url(#arrowCyan)" opacity="0.5"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- ====== LAYER 3: DEMAND SIDE ====== -->
+      <div class="fade-in d7">
+        <!-- Divider -->
+        <div class="relative flex items-center justify-center mb-6">
+          <div class="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-green-500/30 to-transparent"></div>
+          <div class="relative bg-navy-950 px-6 py-2">
+            <span class="text-[10px] font-bold uppercase tracking-[0.25em] text-green-400">Demand Side</span>
+          </div>
+        </div>
+
+        <!-- Arrow Hub → Demand -->
+        <div class="flex justify-center mb-4 fade-in d7">
+          <div class="flex flex-col items-center">
+            <svg width="40" height="40" class="overflow-visible">
+              <line x1="20" y1="0" x2="20" y2="34" stroke="#dc2626" stroke-width="2.5" class="flow-down" marker-end="url(#arrowRed)"/>
+            </svg>
+            <span class="text-[9px] text-brand-400 font-semibold uppercase tracking-wider mt-1">Demand Match</span>
+          </div>
+        </div>
+
+        <!-- Demand nodes -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-4xl mx-auto">
+          <!-- Contractors -->
+          <div class="flow-node relative group fade-in d7">
+            <div class="node-glow absolute -inset-3 bg-gradient-to-br from-orange-500/10 to-orange-500/0 rounded-2xl blur-xl opacity-0 transition-opacity duration-500"></div>
+            <div class="relative bg-gradient-to-br from-orange-600/80 to-orange-800/80 backdrop-blur-sm rounded-xl p-4 border border-orange-500/30 text-center">
+              <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span class="iconify text-2xl text-orange-200" data-icon="mdi:account-hard-hat"></span>
+              </div>
+              <p class="font-bold text-sm text-white">Contractors</p>
+              <p class="text-[9px] text-orange-200 mt-0.5">Civil · MEP · Interior</p>
+              <div class="mt-2 px-2 py-0.5 bg-white/10 rounded text-[10px] font-semibold text-orange-200 inline-block">2,00,000+</div>
+            </div>
+            <div class="tip -bottom-2 left-1/2 -translate-x-1/2 translate-y-full">
+              <p class="font-semibold text-orange-300 mb-1">👷 Contractors</p>
+              <p class="text-slate-300">Civil, MEP, and interior contractors who procure materials for ongoing projects.</p>
+            </div>
+          </div>
+
+          <!-- Builders -->
+          <div class="flow-node relative group fade-in d7" style="animation-delay:1.4s">
+            <div class="node-glow absolute -inset-3 bg-gradient-to-br from-teal-500/10 to-teal-500/0 rounded-2xl blur-xl opacity-0 transition-opacity duration-500"></div>
+            <div class="relative bg-gradient-to-br from-teal-600/80 to-teal-800/80 backdrop-blur-sm rounded-xl p-4 border border-teal-500/30 text-center">
+              <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span class="iconify text-2xl text-teal-200" data-icon="mdi:office-building"></span>
+              </div>
+              <p class="font-bold text-sm text-white">Builders</p>
+              <p class="text-[9px] text-teal-200 mt-0.5">Real Estate · Infra</p>
+              <div class="mt-2 px-2 py-0.5 bg-white/10 rounded text-[10px] font-semibold text-teal-200 inline-block">50,000+</div>
+            </div>
+            <div class="tip -bottom-2 left-1/2 -translate-x-1/2 translate-y-full">
+              <p class="font-semibold text-teal-300 mb-1">🏢 Builders</p>
+              <p class="text-slate-300">Real estate developers and infrastructure companies with large-scale material needs.</p>
+            </div>
+          </div>
+
+          <!-- Homeowners -->
+          <div class="flow-node relative group fade-in d7" style="animation-delay:1.6s">
+            <div class="node-glow absolute -inset-3 bg-gradient-to-br from-pink-500/10 to-pink-500/0 rounded-2xl blur-xl opacity-0 transition-opacity duration-500"></div>
+            <div class="relative bg-gradient-to-br from-pink-600/80 to-pink-800/80 backdrop-blur-sm rounded-xl p-4 border border-pink-500/30 text-center">
+              <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span class="iconify text-2xl text-pink-200" data-icon="mdi:home-heart"></span>
+              </div>
+              <p class="font-bold text-sm text-white">Homeowners</p>
+              <p class="text-[9px] text-pink-200 mt-0.5">Self-Build · Renovation</p>
+              <div class="mt-2 px-2 py-0.5 bg-white/10 rounded text-[10px] font-semibold text-pink-200 inline-block">5,00,000+</div>
+            </div>
+            <div class="tip -bottom-2 left-1/2 -translate-x-1/2 translate-y-full">
+              <p class="font-semibold text-pink-300 mb-1">🏠 Homeowners</p>
+              <p class="text-slate-300">Individuals building or renovating their homes — need guidance and small-quantity orders.</p>
+            </div>
+          </div>
+
+          <!-- Government -->
+          <div class="flow-node relative group fade-in d7" style="animation-delay:1.8s">
+            <div class="node-glow absolute -inset-3 bg-gradient-to-br from-sky-500/10 to-sky-500/0 rounded-2xl blur-xl opacity-0 transition-opacity duration-500"></div>
+            <div class="relative bg-gradient-to-br from-sky-600/80 to-sky-800/80 backdrop-blur-sm rounded-xl p-4 border border-sky-500/30 text-center">
+              <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span class="iconify text-2xl text-sky-200" data-icon="mdi:bank"></span>
+              </div>
+              <p class="font-bold text-sm text-white">Government</p>
+              <p class="text-[9px] text-sky-200 mt-0.5">PWD · Municipal · Railways</p>
+              <div class="mt-2 px-2 py-0.5 bg-white/10 rounded text-[10px] font-semibold text-sky-200 inline-block">Tender-based</div>
+            </div>
+            <div class="tip -bottom-2 left-1/2 -translate-x-1/2 translate-y-full">
+              <p class="font-semibold text-sky-300 mb-1">🏛️ Government</p>
+              <p class="text-slate-300">Public works departments, municipalities, and railways procuring through e-tenders.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== BIDIRECTIONAL FLOW INDICATORS ====== -->
+      <div class="mt-12 max-w-3xl mx-auto fade-in d8">
+        <div class="relative flex items-center justify-center mb-6">
+          <div class="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+          <div class="relative bg-navy-950 px-6 py-2">
+            <span class="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">Data Flow</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Upward Flow -->
+          <div class="bg-white/[0.03] rounded-xl p-5 border border-white/5">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-7 h-7 bg-brand-500/10 rounded-lg flex items-center justify-center">
+                <span class="iconify text-brand-400 text-sm" data-icon="mdi:arrow-up-bold"></span>
+              </div>
+              <span class="text-xs font-bold text-white uppercase tracking-wider">Upstream Flow</span>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                <span class="w-1.5 h-1.5 bg-blue-400 rounded-full flex-shrink-0"></span>
+                Product catalogs & inventory data
+              </div>
+              <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full flex-shrink-0"></span>
+                Pricing & availability updates
+              </div>
+              <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                <span class="w-1.5 h-1.5 bg-violet-400 rounded-full flex-shrink-0"></span>
+                GST & compliance documents
+              </div>
+              <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                <span class="w-1.5 h-1.5 bg-purple-400 rounded-full flex-shrink-0"></span>
+                Shipment & delivery confirmations
+              </div>
+            </div>
+          </div>
+
+          <!-- Downward Flow -->
+          <div class="bg-white/[0.03] rounded-xl p-5 border border-white/5">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-7 h-7 bg-green-500/10 rounded-lg flex items-center justify-center">
+                <span class="iconify text-green-400 text-sm" data-icon="mdi:arrow-down-bold"></span>
+              </div>
+              <span class="text-xs font-bold text-white uppercase tracking-wider">Downstream Flow</span>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                <span class="w-1.5 h-1.5 bg-green-400 rounded-full flex-shrink-0"></span>
+                Matched quotes & supplier details
+              </div>
+              <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full flex-shrink-0"></span>
+                AI price recommendations
+              </div>
+              <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                <span class="w-1.5 h-1.5 bg-teal-400 rounded-full flex-shrink-0"></span>
+                Order tracking & ETAs
+              </div>
+              <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full flex-shrink-0"></span>
+                Market insights & demand trends
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== STATS BAR ====== -->
+      <div class="mt-12 max-w-4xl mx-auto fade-in d8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="text-center bg-white/[0.03] rounded-xl py-4 px-3 border border-white/5">
+            <p class="text-2xl md:text-3xl font-bold text-white" id="stat1">0</p>
+            <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-semibold">Suppliers</p>
+          </div>
+          <div class="text-center bg-white/[0.03] rounded-xl py-4 px-3 border border-white/5">
+            <p class="text-2xl md:text-3xl font-bold text-white" id="stat2">0</p>
+            <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-semibold">Products</p>
+          </div>
+          <div class="text-center bg-white/[0.03] rounded-xl py-4 px-3 border border-white/5">
+            <p class="text-2xl md:text-3xl font-bold text-white" id="stat3">0</p>
+            <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-semibold">Buyers</p>
+          </div>
+          <div class="text-center bg-white/[0.03] rounded-xl py-4 px-3 border border-white/5">
+            <p class="text-2xl md:text-3xl font-bold text-white" id="stat4">0</p>
+            <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-semibold">Cities</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end relative z-10 -->
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center py-8 border-t border-white/5">
+    <p class="text-xs text-slate-600">BuildMart AI Ecosystem · Architecture v2.0</p>
+  </footer>
+
+  <script>
+    // ===== Animated Counter =====
+    function animateCounter(id, target, suffix = '', duration = 2000) {
+      const el = document.getElementById(id);
+      const start = 0;
+      const startTime = performance.now();
+      function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const current = Math.floor(start + (target - start) * eased);
+        if (target >= 1000) {
+          el.textContent = (current / 1000).toFixed(current >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'K+' ;
+        } else {
+          el.textContent = current + '+';
+        }
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
+
+    // Trigger counters when visible
+    const statsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          animateCounter('stat1', 50000);
+          animateCounter('stat2', 1000000);
+          animateCounter('stat3', 750000);
+          animateCounter('stat4', 500);
+          statsObserver.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    statsObserver.observe(document.getElementById('stat1').parentElement.parentElement);
+
+    // ===== Dynamic SVG Connections =====
+    function drawConnections() {
+      const svg = document.getElementById('connectionsSvg');
+      const container = svg.parentElement;
+      const rect = container.getBoundingClientRect();
+
+      // Clear existing lines (keep defs)
+      svg.querySelectorAll('.dyn-line').forEach(l => l.remove());
+
+      const nodes = {
+        mfr: document.getElementById('node-mfr'),
+        dist: document.getElementById('node-dist'),
+        dealer: document.getElementById('node-dealer'),
+        hub: document.getElementById('node-hub'),
+      };
+
+      function getCenter(el) {
+        const r = el.getBoundingClientRect();
+        return {
+          x: r.left + r.width / 2 - rect.left,
+          y: r.top + r.height / 2 - rect.top,
+          top: r.top - rect.top,
+          bottom: r.bottom - rect.top,
+        };
+      }
+
+      function drawLine(from, to, color, marker, cls) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', from.x);
+        line.setAttribute('y1', from.bottom);
+        line.setAttribute('x2', to.x);
+        line.setAttribute('y2', to.top);
+        line.setAttribute('stroke', color);
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('marker-end', `url(#${marker})`);
+        line.setAttribute('class', `dyn-line ${cls}`);
+        line.setAttribute('opacity', '0.4');
+        svg.appendChild(line);
+      }
+
+      // Draw supply chain lines
+      try {
+        const mfr = getCenter(nodes.mfr);
+        const dist = getCenter(nodes.dist);
+        const dealer = getCenter(nodes.dealer);
+        const hub = getCenter(nodes.hub);
+
+        drawLine(mfr, dist, '#3b82f6', 'arrowBlue', 'flow-down');
+        drawLine(dist, dealer, '#6366f1', 'arrowBlue', 'flow-down');
+        drawLine(dealer, hub, '#8b5cf6', 'arrowPurple', 'flow-down');
+      } catch(e) {
+        // Fallback: skip dynamic lines on small screens
+      }
+    }
+
+    // Draw on load and resize
+    window.addEventListener('load', () => setTimeout(drawConnections, 1200));
+    window.addEventListener('resize', drawConnections);
+
+    // ===== Hover highlight connections =====
+    document.querySelectorAll('.flow-node').forEach(node => {
+      node.addEventListener('mouseenter', () => {
+        document.querySelectorAll('.dyn-line').forEach(l => l.style.opacity = '0.1');
+      });
+      node.addEventListener('mouseleave', () => {
+        document.querySelectorAll('.dyn-line').forEach(l => l.style.opacity = '0.4');
+      });
+    });
+  </script>
+</body>
+</html>
