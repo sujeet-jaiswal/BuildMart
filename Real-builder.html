@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#dc2626">
+  <title>BuildMart App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans:['Inter','sans-serif'], serif:['Playfair Display','serif'] },
+          colors: {
+            brand: { 50:'#fef2f2',100:'#fee2e2',500:'#ef4444',600:'#dc2626',700:'#b91c1c',800:'#991b1b' },
+            accent: { 50:'#fffbeb',400:'#fbbf24',500:'#f59e0b',600:'#d97706' },
+            navy: { 800:'#1e293b',900:'#0f172a',950:'#020617' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+    body{font-family:'Inter',sans-serif;overscroll-behavior:none;overflow:hidden;position:fixed;width:100%;height:100%}
+    h1,h2,h3,.serif{font-family:'Playfair Display',serif}
+    .app-shell{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:430px;margin:0 auto;position:relative;background:#f8fafc}
+    .status-bar{height:env(safe-area-inset-top,44px);min-height:44px}
+    .app-content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:80px}
+    .app-content::-webkit-scrollbar{display:none}
+    .bottom-nav{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border-top:1px solid #f1f5f9;padding-bottom:env(safe-area-inset-bottom,0px);z-index:40}
+    .nav-item{transition:all .2s ease}
+    .nav-item.active .nav-icon{color:#dc2626}
+    .nav-item.active .nav-label{color:#dc2626;font-weight:600}
+    .nav-item.active .nav-dot{opacity:1;transform:scaleX(1)}
+    .page{display:none;min-height:100%}
+    .page.active{display:block;animation:pageIn .3s ease}
+    @keyframes pageIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes pageInCenter{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+    .page-center.active{animation:pageInCenter .25s ease}
+    .bottom-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;opacity:0;pointer-events:none;transition:opacity .3s ease}
+    .bottom-sheet-overlay.active{opacity:1;pointer-events:auto}
+    .bottom-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:430px;background:white;border-radius:20px 20px 0 0;z-index:51;transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:90vh;overflow-y:auto}
+    .bottom-sheet.active{transform:translateX(-50%) translateY(0)}
+    .bottom-sheet::-webkit-scrollbar{display:none}
+    .sheet-handle{width:36px;height:4px;background:#d1d5db;border-radius:2px;margin:10px auto 0}
+    .app-toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-120px);z-index:100;background:#1e293b;color:white;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:transform .4s cubic-bezier(.32,.72,0,1);white-space:nowrap;max-width:90%}
+    .app-toast.show{transform:translateX(-50%) translateY(0)}
+    .h-scroll{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;gap:12px;padding:0 16px}
+    .h-scroll::-webkit-scrollbar{display:none}
+    .h-scroll>*{scroll-snap-align:start;flex-shrink:0}
+    .cat-item:active{transform:scale(.93)}
+    .cat-item{transition:transform .15s ease}
+    .prod-card:active{transform:scale(.97)}
+    .prod-card{transition:transform .15s ease}
+    @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.5)}}
+    .pulse-dot{animation:pulse-dot 2s infinite}
+    @keyframes badgeBounce{0%{transform:scale(0)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+    .badge-bounce{animation:badgeBounce .4s cubic-bezier(.68,-.55,.265,1.55)}
+    .search-bar:focus-within{box-shadow:0 0 0 3px rgba(220,38,38,.12);border-color:#dc2626}
+    .img-cover{width:100%;height:100%;object-fit:cover}
+  </style>
+</head>
+<body>
+<div class="app-shell" id="app">
+
+  <!-- Status Bar -->
+  <div class="status-bar bg-white flex items-end px-5 pb-1">
+    <span class="text-xs font-semibold text-gray-900">9:41</span>
+    <div class="flex-1"></div>
+    <div class="flex items-center gap-1.5">
+      <span class="iconify text-sm text-gray-900" data-icon="mdi:signal-cellular-3"></span>
+      <span class="iconify text-sm text-gray-900" data-icon="mdi:wifi-strength-3"></span>
+      <span class="iconify text-base text-gray-900" data-icon="mdi:battery-70"></span>
+    </div>
+  </div>
+
+  <!-- ==================== HOME PAGE ==================== -->
+  <div class="page active" id="page-home">
+    <div class="bg-white px-4 pt-2 pb-3 sticky top-0 z-30">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="flex items-center gap-1.5">
+          <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
+            <span class="iconify text-white text-lg" data-icon="mdi:hard-hat"></span>
+          </div>
+          <span class="text-base font-serif font-bold text-navy-900">Build<span class="text-brand-600">Mart</span></span>
+        </div>
+        <div class="flex-1"></div>
+        <button onclick="openSheet('notificationSheet')" class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <span class="iconify text-xl text-gray-600" data-icon="mdi:bell-outline"></span>
+          <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-brand-600 rounded-full border-2 border-white pulse-dot"></span>
+        </button>
+        <button onclick="openSheet('cartSheet')" class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <span class="iconify text-xl text-gray-600" data-icon="mdi:cart-outline"></span>
+          <span id="cartBadge" class="absolute -top-0.5 -right-0.5 w-5 h-5 bg-brand-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center hidden">0</span>
+        </button>
+      </div>
+      <div class="search-bar flex items-center border border-gray-200 rounded-xl bg-gray-50 overflow-hidden transition-all">
+        <span class="iconify text-lg text-gray-400 ml-3" data-icon="mdi:magnify"></span>
+        <input id="homeSearch" type="text" placeholder="Search cement, steel, tiles..." class="flex-1 px-3 py-2.5 text-sm bg-transparent outline-none" onfocus="openSheet('searchSheet')" readonly>
+        <button onclick="openSheet('searchSheet')" class="px-3 py-2.5"><span class="iconify text-lg text-gray-400" data-icon="mdi:microphone-outline"></span></button>
+      </div>
+    </div>
+
+    <div class="app-content" id="homeScroll">
+      <!-- Location -->
+      <div class="mx-4 mt-3 flex items-center gap-2 bg-accent-50 border border-accent-100 rounded-xl px-3 py-2.5">
+        <span class="iconify text-accent-600 text-lg" data-icon="mdi:map-marker"></span>
+        <div class="flex-1 min-w-0">
+          <p class="text-[10px] text-accent-600 font-semibold uppercase tracking-wider">Delivering to</p>
+          <p class="text-xs font-semibold text-gray-900 truncate">Mumbai, Maharashtra - 400001</p>
+        </div>
+        <button class="text-xs text-brand-600 font-semibold">Change</button>
+      </div>
+
+      <!-- Banner Carousel -->
+      <div class="mt-4 relative">
+        <div class="h-scroll" id="bannerScroll" style="padding:0 16px;gap:0">
+          <div class="w-full flex-shrink-0 rounded-2xl overflow-hidden relative aspect-[2.2/1]">
+            <img src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&h=360&fit=crop" class="img-cover" alt="Construction site">
+            <div class="absolute inset-0 bg-gradient-to-r from-navy-950/80 to-transparent flex flex-col justify-center px-5">
+              <span class="text-[10px] font-bold text-accent-400 uppercase tracking-wider">Mega Sale</span>
+              <p class="text-white font-serif font-bold text-lg mt-0.5 leading-tight">Up to 40% Off<br>on Cement</p>
+              <button class="mt-2 bg-brand-600 text-white text-[11px] font-semibold px-4 py-1.5 rounded-lg w-fit">Shop Now</button>
+            </div>
+          </div>
+          <div class="w-full flex-shrink-0 rounded-2xl overflow-hidden relative aspect-[2.2/1]">
+            <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&h=360&fit=crop" class="img-cover" alt="Steel rebar">
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-950/80 to-transparent flex flex-col justify-center px-5">
+              <span class="text-[10px] font-bold text-blue-300 uppercase tracking-wider">New Arrivals</span>
+              <p class="text-white font-serif font-bold text-lg mt-0.5 leading-tight">TMT Steel Bars<br>Best Prices</p>
+              <button class="mt-2 bg-blue-600 text-white text-[11px] font-semibold px-4 py-1.5 rounded-lg w-fit">View Deals</button>
+            </div>
+          </div>
+          <div class="w-full flex-shrink-0 rounded-2xl overflow-hidden relative aspect-[2.2/1]">
+            <img src="https://images.unsplash.com/photo-1615971677499-5467cbab01c0?w=800&h=360&fit=crop" class="img-cover" alt="Tiles display">
+            <div class="absolute inset-0 bg-gradient-to-r from-emerald-950/80 to-transparent flex flex-col justify-center px-5">
+              <span class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">Free Delivery</span>
+              <p class="text-white font-serif font-bold text-lg mt-0.5 leading-tight">Tiles & Flooring<br>Collection 2025</p>
+              <button class="mt-2 bg-emerald-600 text-white text-[11px] font-semibold px-4 py-1.5 rounded-lg w-fit">Explore</button>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-center gap-1.5 mt-3" id="bannerDots">
+          <span class="w-5 h-1.5 bg-brand-600 rounded-full transition-all"></span>
+          <span class="w-1.5 h-1.5 bg-gray-300 rounded-full transition-all"></span>
+          <span class="w-1.5 h-1.5 bg-gray-300 rounded-full transition-all"></span>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="grid grid-cols-4 gap-2 px-4 mt-5">
+        <button onclick="openSheet('searchSheet')" class="cat-item flex flex-col items-center gap-1.5 py-2">
+          <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center"><span class="iconify text-2xl text-brand-600" data-icon="mdi:magnify"></span></div>
+          <span class="text-[10px] font-medium text-gray-700">Search</span>
+        </button>
+        <button onclick="switchPage('categories')" class="cat-item flex flex-col items-center gap-1.5 py-2">
+          <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center"><span class="iconify text-2xl text-blue-600" data-icon="mdi:view-grid-outline"></span></div>
+          <span class="text-[10px] font-medium text-gray-700">Categories</span>
+        </button>
+        <button onclick="openSheet('inquirySheet')" class="cat-item flex flex-col items-center gap-1.5 py-2">
+          <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center"><span class="iconify text-2xl text-amber-600" data-icon="mdi:file-document-edit-outline"></span></div>
+          <span class="text-[10px] font-medium text-gray-700">Post Req.</span>
+        </button>
+        <button onclick="switchPage('deals')" class="cat-item flex flex-col items-center gap-1.5 py-2">
+          <div class="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center"><span class="iconify text-2xl text-green-600" data-icon="mdi:lightning-bolt"></span></div>
+          <span class="text-[10px] font-medium text-gray-700">Deals</span>
+        </button>
+      </div>
+
+      <!-- Categories Horizontal -->
+      <div class="mt-6">
+        <div class="flex items-center justify-between px-4 mb-3">
+          <h3 class="text-sm font-bold text-gray-900">Shop by Category</h3>
+          <button onclick="switchPage('categories')" class="text-xs text-brand-600 font-semibold flex items-center gap-0.5">View All <span class="iconify text-sm" data-icon="mdi:chevron-right"></span></button>
+        </div>
+        <div class="h-scroll" style="gap:10px">
+          <button onclick="openSheet('searchSheet')" class="cat-item w-[72px] flex flex-col items-center gap-1.5">
+            <div class="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center border border-red-100 overflow-hidden p-1"><img src="https://images.unsplash.com/photo-1587394244237-ccb58fa93a5b?w=80&h=80&fit=crop" class="w-full h-full rounded-lg object-cover" alt="Cement"></div>
+            <span class="text-[10px] font-medium text-gray-700 leading-tight text-center">Cement</span>
+          </button>
+          <button onclick="openSheet('searchSheet')" class="cat-item w-[72px] flex flex-col items-center gap-1.5">
+            <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 overflow-hidden p-1"><img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=80&h=80&fit=crop" class="w-full h-full rounded-lg object-cover" alt="Steel"></div>
+            <span class="text-[10px] font-medium text-gray-700 leading-tight text-center">TMT Steel</span>
+          </button>
+          <button onclick="openSheet('searchSheet')" class="cat-item w-[72px] flex flex-col items-center gap-1.5">
+            <div class="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center border border-orange-100 overflow-hidden p-1"><img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=80&h=80&fit=crop" class="w-full h-full rounded-lg object-cover" alt="Bricks"></div>
+            <span class="text-[10px] font-medium text-gray-700 leading-tight text-center">Bricks</span>
+          </button>
+          <button onclick="openSheet('searchSheet')" class="cat-item w-[72px] flex flex-col items-center gap-1.5">
+            <div class="w-14 h-14 bg-yellow-50 rounded-2xl flex items-center justify-center border border-yellow-100 overflow-hidden p-1"><img src="https://images.unsplash.com/photo-1559827291-bae8ce5ad04e?w=80&h=80&fit=crop" class="w-full h-full rounded-lg object-cover" alt="Sand"></div>
+            <span class="text-[10px] font-medium text-gray-700 leading-tight text-center">Sand</span>
+          </button>
+          <button onclick="openSheet('searchSheet')" class="cat-item w-[72px] flex flex-col items-center gap-1.5">
+            <div class="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center border border-purple-100 overflow-hidden p-1"><img src="https://images.unsplash.com/photo-1615971677499-5467cbab01c0?w=80&h=80&fit=crop" class="w-full h-full rounded-lg object-cover" alt="Tiles"></div>
+            <span class="text-[10px] font-medium text-gray-700 leading-tight text-center">Tiles</span>
+          </button>
+          <button onclick="openSheet('searchSheet')" class="cat-item w-[72px] flex flex-col items-center gap-1.5">
+            <div class="w-14 h-14 bg-cyan-50 rounded-2xl flex items-center justify-center border border-cyan-100 overflow-hidden p-1"><img src="https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=80&h=80&fit=crop" class="w-full h-full rounded-lg object-cover" alt="Plumbing"></div>
+            <span class="text-[10px] font-medium text-gray-700 leading-tight text-center">Plumbing</span>
+          </button>
+          <button onclick="openSheet('searchSheet')" class="cat-item w-[72px] flex flex-col items-center gap-1.5">
+            <div class="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center border border-emerald-100 overflow-hidden p-1"><img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=80&h=80&fit=crop" class="w-full h-full rounded-lg object-cover" alt="Electrical"></div>
+            <span class="text-[10px] font-medium text-gray-700 leading-tight text-center">Electrical</span>
+          </button>
+          <button onclick="openSheet('searchSheet')" class="cat-item w-[72px] flex flex-col items-center gap-1.5">
+            <div class="w-14 h-14 bg-pink-50 rounded-2xl flex items-center justify-center border border-pink-100 overflow-hidden p-1"><img src="https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=80&h=80&fit=crop" class="w-full h-full rounded-lg object-cover" alt="Paints"></div>
+            <span class="text-[10px] font-medium text-gray-700 leading-tight text-center">Paints</span>
+          </button>
+          <button onclick="openSheet('searchSheet')" class="cat-item w-[72px] flex flex-col items-center gap-1.5">
+            <div class="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 overflow-hidden p-1"><img src="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=80&h=80&fit=crop" class="w-full h-full rounded-lg object-cover" alt="Wood"></div>
+            <span class="text-[10px] font-medium text-gray-700 leading-tight text-center">Wood</span>
+          </button>
+          <button onclick="openSheet('searchSheet')" class="cat-item w-[72px] flex flex-col items-center gap-1.5">
+            <div class="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 overflow-hidden p-1"><img src="https://images.unsplash.com/photo-1632759145351-1d592a5c9c85?w=80&h=80&fit=crop" class="w-full h-full rounded-lg object-cover" alt="Roofing"></div>
+            <span class="text-[10px] font-medium text-gray-700 leading-tight text-center">Roofing</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Flash Deals -->
+      <div class="mt-6">
+        <div class="flex items-center justify-between px-4 mb-3">
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-bold text-gray-900">⚡ Flash Deals</h3>
+            <div class="flex items-center gap-1 bg-navy-900 text-white rounded-md px-2 py-0.5">
+              <span class="iconify text-xs" data-icon="mdi:clock-outline"></span>
+              <span class="text-[10px] font-bold" id="dealTimer">02:45:18</span>
+            </div>
+          </div>
+          <button onclick="switchPage('deals')" class="text-xs text-brand-600 font-semibold flex items-center gap-0.5">See All <span class="iconify text-sm" data-icon="mdi:chevron-right"></span></button>
+        </div>
+        <div class="h-scroll" style="gap:10px">
+          <div class="prod-card w-[150px] bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div class="relative aspect-square bg-gray-50">
+              <img src="https://images.unsplash.com/photo-1587394244237-ccb58fa93a5b?w=300&h=300&fit=crop" class="img-cover" alt="Cement deal">
+              <span class="absolute top-2 left-2 bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">40% OFF</span>
+            </div>
+            <div class="p-2.5">
+              <p class="text-[10px] text-gray-500 truncate">Ultratech OPC 53</p>
+              <div class="flex items-baseline gap-1 mt-0.5"><span class="text-sm font-bold text-navy-900">₹270</span><span class="text-[10px] text-gray-400 line-through">₹450</span></div>
+              <div class="mt-1.5 bg-gray-100 rounded-full h-1.5"><div class="bg-brand-600 h-1.5 rounded-full" style="width:78%"></div></div>
+              <p class="text-[9px] text-gray-400 mt-0.5">78% claimed</p>
+            </div>
+          </div>
+          <div class="prod-card w-[150px] bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div class="relative aspect-square bg-gray-50">
+              <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=300&h=300&fit=crop" class="img-cover" alt="Steel deal">
+              <span class="absolute top-2 left-2 bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">25% OFF</span>
+            </div>
+            <div class="p-2.5">
+              <p class="text-[10px] text-gray-500 truncate">Tata Tiscon 12mm</p>
+              <div class="flex items-baseline gap-1 mt-0.5"><span class="text-sm font-bold text-navy-900">₹46.8K</span><span class="text-[10px] text-gray-400 line-through">₹62.5K</span></div>
+              <div class="mt-1.5 bg-gray-100 rounded-full h-1.5"><div class="bg-brand-600 h-1.5 rounded-full" style="width:55%"></div></div>
+              <p class="text-[9px] text-gray-400 mt-0.5">55% claimed</p>
+            </div>
+          </div>
+          <div class="prod-card w-[150px] bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div class="relative aspect-square bg-gray-50">
+              <img src="https://images.unsplash.com/photo-1615971677499-5467cbab01c0?w=300&h=300&fit=crop" class="img-cover" alt="Tiles deal">
+              <span class="absolute top-2 left-2 bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">30% OFF</span>
+            </div>
+            <div class="p-2.5">
+              <p class="text-[10px] text-gray-500 truncate">Kajaria 2x2 Tiles</p>
+              <div class="flex items-baseline gap-1 mt-0.5"><span class="text-sm font-bold text-navy-900">₹34</span><span class="text-[10px] text-gray-400 line-through">₹48</span></div>
+              <div class="mt-1.5 bg-gray-100 rounded-full h-1.5"><div class="bg-brand-600 h-1.5 rounded-full" style="width:90%"></div></div>
+              <p class="text-[9px] text-gray-400 mt-0.5">90% claimed</p>
+            </div>
+          </div>
+          <div class="prod-card w-[150px] bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div class="relative aspect-square bg-gray-50">
+              <img src="https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=300&h=300&fit=crop" class="img-cover" alt="Paint deal">
+              <span class="absolute top-2 left-2 bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">20% OFF</span>
+            </div>
+            <div class="p-2.5">
+              <p class="text-[10px] text-gray-500 truncate">Asian Paints 10L</p>
+              <div class="flex items-baseline gap-1 mt-0.5"><span class="text-sm font-bold text-navy-900">₹2,560</span><span class="text-[10px] text-gray-400 line-through">₹3,200</span></div>
+              <div class="mt-1.5 bg-gray-100 rounded-full h-1.5"><div class="bg-brand-600 h-1.5 rounded-full" style="width:40%"></div></div>
+              <p class="text-[9px] text-gray-400 mt-0.5">40% claimed</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Products -->
+      <div class="mt-6 px-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold text-gray-900">Top Products</h3>
+          <button onclick="switchPage('products')" class="text-xs text-brand-600 font-semibold flex items-center gap-0.5">See All <span class="iconify text-sm" data-icon="mdi:chevron-right"></span></button>
+        </div>
+        <div class="grid grid-cols-2 gap-3" id="homeProductsGrid"></div>
+      </div>
+
+      <!-- Top Suppliers -->
+      <div class="mt-6">
+        <div class="flex items-center justify-between px-4 mb-3">
+          <h3 class="text-sm font-bold text-gray-900">Top Suppliers</h3>
+          <button onclick="switchPage('suppliers')" class="text-xs text-brand-600 font-semibold flex items-center gap-0.5">See All <span class="iconify text-sm" data-icon="mdi:chevron-right"></span></button>
+        </div>
+        <div class="h-scroll" style="gap:10px" id="homeSuppliersScroll"></div>
+      </div>
+
+      <!-- Why BuildMart -->
+      <div class="mt-6 px-4 mb-4">
+        <h3 class="text-sm font-bold text-gray-900 mb-3">Why BuildMart?</h3>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-white rounded-xl border border-gray-100 p-3 flex items-start gap-2.5">
+            <div class="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0"><span class="iconify text-lg text-green-600" data-icon="mdi:shield-check"></span></div>
+            <div><p class="text-[11px] font-bold text-gray-900">Verified</p><p class="text-[9px] text-gray-500 leading-snug mt-0.5">GST & PAN verified suppliers</p></div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-3 flex items-start gap-2.5">
+            <div class="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0"><span class="iconify text-lg text-blue-600" data-icon="mdi:scale-balance"></span></div>
+            <div><p class="text-[11px] font-bold text-gray-900">Best Price</p><p class="text-[9px] text-gray-500 leading-snug mt-0.5">Compare & save up to 30%</p></div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-3 flex items-start gap-2.5">
+            <div class="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0"><span class="iconify text-lg text-amber-600" data-icon="mdi:truck-fast"></span></div>
+            <div><p class="text-[11px] font-bold text-gray-900">Pan India</p><p class="text-[9px] text-gray-500 leading-snug mt-0.5">Delivery in 500+ cities</p></div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-3 flex items-start gap-2.5">
+            <div class="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0"><span class="iconify text-lg text-purple-600" data-icon="mdi:headset"></span></div>
+            <div><p class="text-[11px] font-bold text-gray-900">24/7 Support</p><p class="text-[9px] text-gray-500 leading-snug mt-0.5">Dedicated help anytime</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="h-4"></div>
+    </div>
+  </div>
+
+  <!-- ==================== CATEGORIES PAGE ==================== -->
+  <div class="page page-center" id="page-categories">
+    <div class="bg-white px-4 pt-3 pb-3 sticky top-0 z-30 flex items-center gap-3">
+      <button onclick="switchPage('home')" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100"><span class="iconify text-xl text-gray-700" data-icon="mdi:arrow-left"></span></button>
+      <h2 class="text-base font-bold text-gray-900">All Categories</h2>
+    </div>
+    <div class="app-content px-4 py-3">
+      <div class="relative mb-4">
+        <span class="iconify absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" data-icon="mdi:magnify"></span>
+        <input type="text" placeholder="Search categories..." class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand-500">
+      </div>
+      <div class="grid grid-cols-3 gap-3" id="catGrid"></div>
+    </div>
+  </div>
+
+  <!-- ==================== PRODUCTS PAGE ==================== -->
+  <div class="page" id="page-products">
+    <div class="bg-white px-4 pt-3 pb-3 sticky top-0 z-30">
+      <div class="flex items-center gap-3 mb-3">
+        <button onclick="switchPage('home')" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100"><span class="iconify text-xl text-gray-700" data-icon="mdi:arrow-left"></span></button>
+        <h2 class="text-base font-bold text-gray-900">Products</h2>
+      </div>
+      <div class="search-bar flex items-center border border-gray-200 rounded-xl bg-gray-50 overflow-hidden">
+        <span class="iconify text-lg text-gray-400 ml-3" data-icon="mdi:magnify"></span>
+        <input type="text" placeholder="Search products..." class="flex-1 px-3 py-2.5 text-sm bg-transparent outline-none">
+      </div>
+      <div class="h-scroll mt-2.5" style="gap:6px;padding:0">
+        <button class="px-3 py-1.5 bg-brand-600 text-white text-[11px] font-semibold rounded-full whitespace-nowrap">All</button>
+        <button class="px-3 py-1.5 bg-gray-100 text-gray-600 text-[11px] font-medium rounded-full whitespace-nowrap">Cement</button>
+        <button class="px-3 py-1.5 bg-gray-100 text-gray-600 text-[11px] font-medium rounded-full whitespace-nowrap">Steel</button>
+        <button class="px-3 py-1.5 bg-gray-100 text-gray-600 text-[11px] font-medium rounded-full whitespace-nowrap">Tiles</button>
+        <button class="px-3 py-1.5 bg-gray-100 text-gray-600 text-[11px] font-medium rounded-full whitespace-nowrap">Plumbing</button>
+        <button class="px-3 py-1.5 bg-gray-100 text-gray-600 text-[11px] font-medium rounded-full whitespace-nowrap">Paints</button>
+        <button class="px-3 py-1.5 bg-gray-100 text-gray-600 text-[11px] font-medium rounded-full whitespace-nowrap">Electrical</button>
+      </div>
+    </div>
+    <div class="app-content px-4 py-3">
+      <div class="grid grid-cols-2 gap-3" id="productsGridPage"></div>
+    </div>
+  </div>
+
+  <!-- ==================== DEALS PAGE ==================== -->
+  <div class="page" id="page-deals">
+    <div class="bg-white px-4 pt-3 pb-3 sticky top-0 z-30 flex items-center gap-3">
+      <button onclick="switchPage('home')" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100"><span class="iconify text-xl text-gray-700" data-icon="mdi:arrow-left"></span></button>
+      <h2 class="text-base font-bold text-gray-900">🔥 Deals & Offers</h2>
+    </div>
+    <div class="app-content">
+      <div class="bg-gradient-to-br from-brand-600 to-brand-800 p-5 text-white">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-red-200">⚡ Flash Sale Ends In</p>
+        <div class="flex items-center gap-2 mt-2">
+          <div class="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 text-center"><span class="text-xl font-bold" id="hrs">02</span><p class="text-[8px] text-red-200">HRS</p></div>
+          <span class="text-2xl font-bold">:</span>
+          <div class="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 text-center"><span class="text-xl font-bold" id="mins">45</span><p class="text-[8px] text-red-200">MIN</p></div>
+          <span class="text-2xl font-bold">:</span>
+          <div class="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 text-center"><span class="text-xl font-bold" id="secs">18</span><p class="text-[8px] text-red-200">SEC</p></div>
+        </div>
+      </div>
+      <div class="px-4 py-3">
+        <h3 class="text-sm font-bold text-gray-900 mb-3">Today's Best Deals</h3>
+        <div class="space-y-3" id="dealsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SUPPLIERS PAGE ==================== -->
+  <div class="page" id="page-suppliers">
+    <div class="bg-white px-4 pt-3 pb-3 sticky top-0 z-30 flex items-center gap-3">
+      <button onclick="switchPage('home')" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100"><span class="iconify text-xl text-gray-700" data-icon="mdi:arrow-left"></span></button>
+      <h2 class="text-base font-bold text-gray-900">Suppliers</h2>
+    </div>
+    <div class="app-content px-4 py-3">
+      <div class="relative mb-4">
+        <span class="iconify absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" data-icon="mdi:magnify"></span>
+        <input type="text" placeholder="Search suppliers..." class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-brand-500">
+      </div>
+      <div class="space-y-3" id="suppliersList"></div>
+    </div>
+  </div>
+
+  <!-- ==================== PROFILE PAGE ==================== -->
+  <div class="page" id="page-profile">
+    <div class="bg-white px-4 pt-3 pb-4 sticky top-0 z-30"><h2 class="text-base font-bold text-gray-900 text-center">My Account</h2></div>
+    <div class="app-content">
+      <div class="bg-white px-4 py-5 text-center border-b border-gray-100">
+        <div class="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-700 rounded-full flex items-center justify-center mx-auto text-white text-2xl font-bold">GK</div>
+        <h3 class="text-base font-bold text-gray-900 mt-3">Guest User</h3>
+        <p class="text-xs text-gray-500 mt-0.5">Login to access all features</p>
+        <button onclick="openSheet('loginSheet')" class="mt-3 px-6 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg">Login / Sign Up</button>
+      </div>
+      <div class="bg-white mt-2 border-b border-gray-100">
+        <button class="w-full flex items-center gap-3 px-4 py-3.5"><span class="iconify text-xl text-gray-500" data-icon="mdi:package-variant-closed"></span><span class="text-sm text-gray-800 flex-1 text-left">My Orders</span><span class="iconify text-gray-400" data-icon="mdi:chevron-right"></span></button>
+        <button class="w-full flex items-center gap-3 px-4 py-3.5"><span class="iconify text-xl text-gray-500" data-icon="mdi:heart-outline"></span><span class="text-sm text-gray-800 flex-1 text-left">Wishlist</span><span class="iconify text-gray-400" data-icon="mdi:chevron-right"></span></button>
+        <button class="w-full flex items-center gap-3 px-4 py-3.5"><span class="iconify text-xl text-gray-500" data-icon="mdi:file-document-edit-outline"></span><span class="text-sm text-gray-800 flex-1 text-left">My Inquiries</span><span class="iconify text-gray-400" data-icon="mdi:chevron-right"></span></button>
+        <button class="w-full flex items-center gap-3 px-4 py-3.5"><span class="iconify text-xl text-gray-500" data-icon="mdi:map-marker-outline"></span><span class="text-sm text-gray-800 flex-1 text-left">Saved Addresses</span><span class="iconify text-gray-400" data-icon="mdi:chevron-right"></span></button>
+      </div>
+      <div class="bg-white mt-2 border-b border-gray-100">
+        <button class="w-full flex items-center gap-3 px-4 py-3.5"><span class="iconify text-xl text-gray-500" data-icon="mdi:store-outline"></span><span class="text-sm text-gray-800 flex-1 text-left">Become a Supplier</span><span class="iconify text-gray-400" data-icon="mdi:chevron-right"></span></button>
+        <button class="w-full flex items-center gap-3 px-4 py-3.5"><span class="iconify text-xl text-gray-500" data-icon="mdi:percent-outline"></span><span class="text-sm text-gray-800 flex-1 text-left">Refer & Earn</span><span class="iconify text-gray-400" data-icon="mdi:chevron-right"></span></button>
+        <button class="w-full flex items-center gap-3 px-4 py-3.5"><span class="iconify text-xl text-gray-500" data-icon="mdi:headset"></span><span class="text-sm text-gray-800 flex-1 text-left">Help & Support</span><span class="iconify text-gray-400" data-icon="mdi:chevron-right"></span></button>
+        <button class="w-full flex items-center gap-3 px-4 py-3.5"><span class="iconify text-xl text-gray-500" data-icon="mdi:cog-outline"></span><span class="text-sm text-gray-800 flex-1 text-left">Settings</span><span class="iconify text-gray-400" data-icon="mdi:chevron-right"></span></button>
+      </div>
+      <div class="bg-white mt-2">
+        <button class="w-full flex items-center gap-3 px-4 py-3.5"><span class="iconify text-xl text-gray-500" data-icon="mdi:information-outline"></span><span class="text-sm text-gray-800 flex-1 text-left">About BuildMart</span><span class="iconify text-gray-400" data-icon="mdi:chevron-right"></span></button>
+        <button class="w-full flex items-center gap-3 px-4 py-3.5"><span class="iconify text-xl text-brand-500" data-icon="mdi:logout"></span><span class="text-sm text-brand-600 flex-1 text-left font-semibold">Logout</span></button>
+      </div>
+      <p class="text-center text-[10px] text-gray-400 mt-4 pb-4">BuildMart App v2.5.0</p>
+    </div>
+  </div>
+
+  <!-- ==================== BOTTOM NAV ==================== -->
+  <nav class="bottom-nav">
+    <div class="grid grid-cols-5 py-1.5">
+      <button class="nav-item active flex flex-col items-center gap-0.5 py-1" onclick="switchPage('home')">
+        <span class="iconify nav-icon text-xl text-gray-400" data-icon="mdi:home"></span>
+        <span class="nav-label text-[9px] text-gray-400">Home</span>
+        <span class="nav-dot w-4 h-0.5 bg-brand-600 rounded-full mt-0.5 opacity-0 transform scale-x-0 transition-all"></span>
+      </button>
+      <button class="nav-item flex flex-col items-center gap-0.5 py-1" onclick="switchPage('categories')">
+        <span class="iconify nav-icon text-xl text-gray-400" data-icon="mdi:view-grid-outline"></span>
+        <span class="nav-label text-[9px] text-gray-400">Categories</span>
+        <span class="nav-dot w-4 h-0.5 bg-brand-600 rounded-full mt-0.5 opacity-0 transform scale-x-0 transition-all"></span>
+      </button>
+      <button class="nav-item flex flex-col items-center gap-0.5 py-1" onclick="switchPage('deals')">
+        <span class="iconify nav-icon text-xl text-gray-400" data-icon="mdi:lightning-bolt"></span>
+        <span class="nav-label text-[9px] text-gray-400">Deals</span>
+        <span class="nav-dot w-4 h-0.5 bg-brand-600 rounded-full mt-0.5 opacity-0 transform scale-x-0 transition-all"></span>
+      </button>
+      <button class="nav-item flex flex-col items-center gap-0.5 py-1" onclick="switchPage('suppliers')">
+        <span class="iconify nav-icon text-xl text-gray-400" data-icon="mdi:store-outline"></span>
+        <span class="nav-label text-[9px] text-gray-400">Suppliers</span>
+        <span class="nav-dot w-4 h-0.5 bg-brand-600 rounded-full mt-0.5 opacity-0 transform scale-x-0 transition-all"></span>
+      </button>
+      <button class="nav-item flex flex-col items-center gap-0.5 py-1" onclick="switchPage('profile')">
+        <span class="iconify nav-icon text-xl text-gray-400" data-icon="mdi:account-circle-outline"></span>
+        <span class="nav-label text-[9px] text-gray-400">Profile</span>
+        <span class="nav-dot w-4 h-0.5 bg-brand-600 rounded-full mt-0.5 opacity-0 transform scale-x-0 transition-all"></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ==================== BOTTOM SHEETS ==================== -->
+
+  <!-- Search Sheet -->
+  <div class="bottom-sheet-overlay" id="searchOverlay" onclick="closeSheet('searchSheet')"></div>
+  <div class="bottom-sheet" id="searchSheet" style="max-height:85vh">
+    <div class="sheet-handle"></div>
+    <div class="p-4">
+      <div class="search-bar flex items-center border border-gray-200 rounded-xl bg-gray-50 overflow-hidden mb-4">
+        <span class="iconify text-lg text-gray-400 ml-3" data-icon="mdi:magnify"></span>
+        <input id="sheetSearchInput" type="text" placeholder="Search cement, steel, tiles..." class="flex-1 px-3 py-2.5 text-sm bg-transparent outline-none" autofocus>
+      </div>
+      <div id="searchResults">
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Popular Searches</p>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="doSearch('Ultratech Cement')" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">Ultratech Cement</button>
+          <button onclick="doSearch('TMT Steel 12mm')" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">TMT Steel 12mm</button>
+          <button onclick="doSearch('Kajaria Tiles')" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">Kajaria Tiles</button>
+          <button onclick="doSearch('CPVC Pipe')" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">CPVC Pipe</button>
+          <button onclick="doSearch('Asian Paints')" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">Asian Paints</button>
+          <button onclick="doSearch('Red Bricks')" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">Red Bricks</button>
+          <button onclick="doSearch('Plywood 18mm')" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">Plywood 18mm</button>
+          <button onclick="doSearch('River Sand')" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">River Sand</button>
+          <button onclick="doSearch('GI Roofing Sheet')" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">GI Roofing Sheet</button>
+          <button onclick="doSearch('Wire & Cable')" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">Wire & Cable</button>
+        </div>
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-5">Trending Now</p>
+        <div class="space-y-2">
+          <button onclick="doSearch('ACC Cement')" class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+            <img src="https://images.unsplash.com/photo-1587394244237-ccb58fa93a5b?w=60&h=60&fit=crop" class="w-10 h-10 rounded-lg object-cover" alt="Cement">
+            <div class="text-left"><p class="text-xs font-semibold text-gray-800">ACC Cement 43 Grade</p><p class="text-[10px] text-gray-400">Starting ₹355/bag</p></div>
+            <span class="iconify text-gray-300 ml-auto" data-icon="mdi:chevron-right"></span>
+          </button>
+          <button onclick="doSearch('JSW Steel')" class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+            <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=60&h=60&fit=crop" class="w-10 h-10 rounded-lg object-cover" alt="Steel">
+            <div class="text-left"><p class="text-xs font-semibold text-gray-800">JSW TMT Fe-500D</p><p class="text-[10px] text-gray-400">Starting ₹58,000/MT</p></div>
+            <span class="iconify text-gray-300 ml-auto" data-icon="mdi:chevron-right"></span>
+          </button>
+          <button onclick="doSearch('Somany Tiles')" class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+            <img src="https://images.unsplash.com/photo-1615971677499-5467cbab01c0?w=60&h=60&fit=crop" class="w-10 h-10 rounded-lg object-cover" alt="Tiles">
+            <div class="text-left"><p class="text-xs font-semibold text-gray-800">Somany Floor Tiles</p><p class="text-[10px] text-gray-400">Starting ₹38/sq.ft</p></div>
+            <span class="iconify text-gray-300 ml-auto" data-icon="mdi:chevron-right"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inquiry Sheet -->
+  <div class="bottom-sheet-overlay" id="inquiryOverlay" onclick="closeSheet('inquirySheet')"></div>
+  <div class="bottom-sheet" id="inquirySheet">
+    <div class="sheet-handle"></div>
+    <div class="p-4">
+      <h3 class="text-lg font-serif font-bold text-gray-900">Send Inquiry</h3>
+      <p class="text-xs text-gray-500 mt-0.5 mb-4" id="inquiryProductName">Product details</p>
+      <div class="space-y-3">
+        <div><label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Your Name</label><input type="text" placeholder="Enter full name" class="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-brand-500"></div>
+        <div><label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Mobile Number</label>
+          <div class="flex mt-1 border border-gray-200 rounded-xl overflow-hidden focus-within:border-brand-500"><span class="bg-gray-50 px-3 flex items-center text-sm text-gray-500 border-r border-gray-200">+91</span><input type="tel" placeholder="10-digit number" class="flex-1 px-4 py-2.5 text-sm outline-none" maxlength="10"></div>
+        </div>
+        <div><label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Quantity</label><input type="text" placeholder="e.g., 500 bags, 1000 sq ft" class="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-brand-500"></div>
+        <div><label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Message</label><textarea rows="3" placeholder="Describe requirements..." class="w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-brand-500 resize-none"></textarea></div>
+        <button onclick="sendInquiry()" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors">Send Inquiry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Sheet -->
+  <div class="bottom-sheet-overlay" id="loginOverlay" onclick="closeSheet('loginSheet')"></div>
+  <div class="bottom-sheet" id="loginSheet">
+    <div class="sheet-handle"></div>
+    <div class="p-4">
+      <h3 class="text-lg font-serif font-bold text-gray-900">Welcome Back</h3>
+      <p class="text-xs text-gray-500 mt-0.5 mb-4">Login to your BuildMart account</p>
+      <div><label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Mobile Number</label>
+        <div class="flex mt-1 border border-gray-200 rounded-xl overflow-hidden focus-within:border-brand-500"><span class="bg-gray-50 px-3 flex items-center text-sm text-gray-500 border-r border-gray-200">+91</span><input type="tel" placeholder="Enter 10-digit number" class="flex-1 px-4 py-2.5 text-sm outline-none" maxlength="10"></div>
+      </div>
+      <button onclick="handleLogin()" class="w-full mt-4 py-3 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors">Send OTP</button>
+      <div class="relative my-4"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div><div class="relative flex justify-center"><span class="bg-white px-3 text-[10px] text-gray-400 uppercase tracking-wider">or</span></div></div>
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="handleLogin()" class="flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-2.5 text-sm font-medium"><span class="iconify text-lg" data-icon="mdi:google"></span>Google</button>
+        <button onclick="handleLogin()" class="flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-2.5 text-sm font-medium"><span class="iconify text-lg text-blue-600" data-icon="mdi:linkedin"></span>LinkedIn</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart Sheet -->
+  <div class="bottom-sheet-overlay" id="cartOverlay" onclick="closeSheet('cartSheet')"></div>
+  <div class="bottom-sheet" id="cartSheet">
+    <div class="sheet-handle"></div>
+    <div class="p-4" id="cartContent">
+      <div class="text-center py-10">
+        <span class="iconify text-6xl text-gray-200" data-icon="mdi:cart-off"></span>
+        <p class="text-sm font-semibold text-gray-500 mt-3">Your cart is empty</p>
+        <p class="text-xs text-gray-400 mt-1">Add items to get started</p>
+        <button onclick="closeSheet('cartSheet');switchPage('products')" class="mt-4 px-6 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg">Browse Products</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Sheet -->
+  <div class="bottom-sheet-overlay" id="notificationOverlay" onclick="closeSheet('notificationSheet')"></div>
+  <div class="bottom-sheet" id="notificationSheet" style="max-height:70vh">
+    <div class="sheet-handle"></div>
+    <div class="p-4">
+      <h3 class="text-lg font-serif font-bold text-gray-900 mb-3">Notifications</h3>
+      <div class="space-y-2">
+        <div class="flex gap-3 p-3 bg-brand-50 rounded-xl border border-brand-100">
+          <div class="w-9 h-9 bg-brand-100 rounded-lg flex items-center justify-center flex-shrink-0"><span class="iconify text-brand-600" data-icon="mdi:lightning-bolt"></span></div>
+          <div><p class="text-xs font-semibold text-gray-900">Flash Sale is Live! 🔥</p><p class="text-[10px] text-gray-500 mt-0.5">Up to 40% off on cement & steel. Ends in 2 hours.</p><p class="text-[9px] text-gray-400 mt-1">2 min ago</p></div>
+        </div>
+        <div class="flex gap-3 p-3 bg-white rounded-xl border border-gray-100">
+          <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0"><span class="iconify text-green-600" data-icon="mdi:truck-delivery"></span></div>
+          <div><p class="text-xs font-semibold text-gray-900">Order Shipped</p><p class="text-[10px] text-gray-500 mt-0.5">Your cement order #BM4821 has been shipped.</p><p class="text-[9px] text-gray-400 mt-1">1 hour ago</p></div>
+        </div>
+        <div class="flex gap-3 p-3 bg-white rounded-xl border border-gray-100">
+          <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0"><span class="iconify text-blue-600" data-icon="mdi:tag-multiple"></span></div>
+          <div><p class="text-xs font-semibold text-gray-900">Price Drop Alert!</p><p class="text-[10px] text-gray-500 mt-0.5">Kajaria tiles you viewed are now ₹34/sq.ft</p><p class="text-[9px] text-gray-400 mt-1">3 hours ago</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Product Detail Sheet -->
+  <div class="bottom-sheet-overlay" id="productOverlay" onclick="closeSheet('productSheet')"></div>
+  <div class="bottom-sheet" id="productSheet" style="max-height:92vh">
+    <div class="sheet-handle"></div>
+    <div class="relative aspect-[4/3] bg-gray-50">
+      <img id="productDetailImg" src="https://images.unsplash.com/photo-1587394244237-ccb58fa93a5b?w=800&h=600&fit=crop" class="img-cover" alt="Product">
+      <button onclick="closeSheet('productSheet')" class="absolute top-3 right-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow"><span class="iconify text-gray-600" data-icon="mdi:close"></span></button>
+    </div>
+    <div class="p-4">
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-0.5 bg-brand-50 text-brand-600 text-[10px] font-bold rounded">BEST SELLER</span>
+        <div class="flex items-center gap-0.5"><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="text-xs font-semibold">4.5</span><span class="text-xs text-gray-400">(2,847 reviews)</span></div>
+      </div>
+      <h2 class="text-lg font-serif font-bold text-gray-900 mt-2" id="productDetailName">Ultratech OPC 53 Grade Cement – 50 Kg Bag</h2>
+      <div class="flex items-baseline gap-2 mt-2">
+        <span class="text-2xl font-bold text-navy-900" id="productDetailPrice">₹390</span>
+        <span class="text-sm text-gray-400 line-through" id="productDetailOld">₹450</span>
+        <span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded" id="productDetailOff">13% OFF</span>
+      </div>
+      <p class="text-[10px] text-gray-500 mt-1">Min. Order: 100 Bags · Ex-Works Mumbai · GST Extra</p>
+      <div class="border-t border-gray-100 mt-4 pt-4 space-y-2.5">
+        <div class="flex items-center gap-2 text-xs text-gray-600"><span class="iconify text-green-500" data-icon="mdi:check-circle"></span> ISI Marked & BIS Certified</div>
+        <div class="flex items-center gap-2 text-xs text-gray-600"><span class="iconify text-green-500" data-icon="mdi:check-circle"></span> Fresh Stock (Manufactured: Jan 2025)</div>
+        <div class="flex items-center gap-2 text-xs text-gray-600"><span class="iconify text-green-500" data-icon="mdi:check-circle"></span> Bulk Discounts Available</div>
+        <div class="flex items-center gap-2 text-xs text-gray-600"><span class="iconify text-green-500" data-icon="mdi:check-circle"></span> Delivery Across India</div>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeSheet('productSheet');openInquiryFor(document.getElementById('productDetailName').textContent+' – '+document.getElementById('productDetailPrice').textContent)" class="flex-1 py-3 bg-brand-600 text-white text-sm font-semibold rounded-xl">Get Quote</button>
+        <button onclick="addToCart(document.getElementById('productDetailName').textContent.split('–')[0].trim())" class="py-3 px-4 border border-gray-200 rounded-xl"><span class="iconify text-xl text-gray-600" data-icon="mdi:cart-plus"></span></button>
+        <button onclick="toggleWish(this)" class="py-3 px-4 border border-gray-200 rounded-xl"><span class="iconify text-xl text-gray-400 wish-icon" data-icon="mdi:heart-outline"></span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supplier Detail Sheet -->
+  <div class="bottom-sheet-overlay" id="supplierOverlay" onclick="closeSheet('supplierSheet')"></div>
+  <div class="bottom-sheet" id="supplierSheet" style="max-height:80vh">
+    <div class="sheet-handle"></div>
+    <div class="p-4">
+      <div class="flex items-center gap-3">
+        <div class="w-14 h-14 bg-gradient-to-br from-brand-500 to-brand-700 rounded-2xl flex items-center justify-center text-white font-bold text-lg" id="supplierDetailInitials">SK</div>
+        <div>
+          <div class="flex items-center gap-1.5"><h3 class="text-base font-bold text-gray-900" id="supplierDetailName">Shree Krishna Materials</h3><span class="iconify text-blue-500" data-icon="mdi:check-decagram"></span></div>
+          <p class="text-xs text-gray-500" id="supplierDetailLoc">Mumbai, Maharashtra · Since 2005</p>
+          <div class="flex items-center gap-3 mt-1"><span class="flex items-center gap-0.5 text-xs"><span class="iconify text-amber-400" data-icon="mdi:star"></span> 4.8 (1,247)</span><span class="text-xs text-gray-400">92% Response</span></div>
+        </div>
+      </div>
+      <div class="mt-4 p-3 bg-gray-50 rounded-xl space-y-2">
+        <div class="flex items-center gap-2 text-xs text-gray-600"><span class="iconify text-green-500" data-icon="mdi:check-circle"></span> GST Verified: 27AABCS1234F1Z5</div>
+        <div class="flex items-center gap-2 text-xs text-gray-600"><span class="iconify text-green-500" data-icon="mdi:check-circle"></span> PAN Verified</div>
+        <div class="flex items-center gap-2 text-xs text-gray-600"><span class="iconify text-green-500" data-icon="mdi:check-circle"></span> Physical Verification Done</div>
+      </div>
+      <p class="text-xs text-gray-500 mt-4 leading-relaxed">Leading distributor of cement, steel, sand & construction aggregates. Serving 500+ contractors and builders.</p>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeSheet('supplierSheet');openInquiryFor(document.getElementById('supplierDetailName').textContent)" class="flex-1 py-3 bg-brand-600 text-white text-sm font-semibold rounded-xl">Contact Supplier</button>
+        <button class="py-3 px-4 border border-gray-200 rounded-xl"><span class="iconify text-xl text-gray-600" data-icon="mdi:phone"></span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="app-toast" id="appToast">
+  <div class="flex items-center gap-2">
+    <span class="iconify text-base" data-icon="mdi:check-circle" id="toastIcon"></span>
+    <span id="toastText">Success!</span>
+  </div>
+</div>
+
+<!-- WhatsApp FAB -->
+<a href="https://wa.me/911234567890" target="_blank" class="fixed bottom-20 right-4 z-30 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30 active:scale-90 transition-transform" style="max-width:430px;right:max(16px,calc((100vw - 430px)/2 + 16px))">
+  <span class="iconify text-white text-2xl" data-icon="mdi:whatsapp"></span>
+</a>
+
+<script>
+// ===== REAL CONSTRUCTION IMAGE DATA =====
+const IMG = {
+  cement:   'https://images.unsplash.com/photo-1587394244237-ccb58fa93a5b',
+  steel:    'https://images.unsplash.com/photo-1504307651254-35680f356dfd',
+  bricks:   'https://images.unsplash.com/photo-1518709268805-4e9042af9f23',
+  sand:     'https://images.unsplash.com/photo-1559827291-bae8ce5ad04e',
+  tiles:    'https://images.unsplash.com/photo-1615971677499-5467cbab01c0',
+  pipes:    'https://images.unsplash.com/photo-1585704032915-c3400ca199e7',
+  paint:    'https://images.unsplash.com/photo-1589939705384-5185137a7f0f',
+  plywood:  'https://images.unsplash.com/photo-1558618666-fcd25c85f82e',
+  roofing:  'https://images.unsplash.com/photo-1632759145351-1d592a5c9c85',
+  electrical:'https://images.unsplash.com/photo-1621905251189-08b45d6a269e',
+  tools:    'https://images.unsplash.com/photo-1581783898377-1c85bf937427',
+  concrete: 'https://images.unsplash.com/photo-1590644365607-1c5a0a1e9b77',
+  construction:'https://images.unsplash.com/photo-1541888946425-d81bb19240f5',
+  building: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab',
+  bathroom:'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14',
+  doors:   'https://images.unsplash.com/photo-1558618666-fcd25c85f82e',
+  blocks:  'https://images.unsplash.com/photo-1590644365607-1c5a0a1e9b77',
+  wire:    'https://images.unsplash.com/photo-1621905251189-08b45d6a269e',
+  hardware:'https://images.unsplash.com/photo-1581783898377-1c85bf937427',
+  aggregate:'https://images.unsplash.com/photo-1559827291-bae8ce5ad04e',
+  stones:  'https://images.unsplash.com/photo-1618220179428-22790b461013',
+};
+
+function img(url, w, h) { return `${url}?w=${w}&h=${h}&fit=crop`; }
+
+// ===== DATA =====
+const categories = [
+  { name:'Cement', imgKey:'cement', color:'red', count:'2,400+' },
+  { name:'TMT Steel', imgKey:'steel', color:'blue', count:'1,800+' },
+  { name:'Bricks', imgKey:'bricks', color:'orange', count:'950+' },
+  { name:'Sand', imgKey:'sand', color:'yellow', count:'620+' },
+  { name:'Tiles', imgKey:'tiles', color:'purple', count:'3,200+' },
+  { name:'Plumbing', imgKey:'pipes', color:'cyan', count:'4,100+' },
+  { name:'Electrical', imgKey:'electrical', color:'emerald', count:'5,600+' },
+  { name:'Paints', imgKey:'paint', color:'pink', count:'2,800+' },
+  { name:'Wood', imgKey:'plywood', color:'amber', count:'1,500+' },
+  { name:'Roofing', imgKey:'roofing', color:'slate', count:'780+' },
+  { name:'Doors', imgKey:'doors', color:'indigo', count:'1,100+' },
+  { name:'Hardware', imgKey:'tools', color:'lime', count:'6,300+' },
+];
+
+const products = [
+  { name:'Ultratech OPC 53 Grade – 50Kg', brand:'Ultratech', price:'₹390', old:'₹450', off:'13%', rating:'4.5', reviews:'2.8K', imgKey:'cement', badge:'BEST SELLER', badgeColor:'bg-brand-600' },
+  { name:'Tata Tiscon Fe-500D 12mm', brand:'Tata Tiscon', price:'₹62,500', old:'₹68,000', off:'8%', rating:'4.8', reviews:'4.1K', imgKey:'steel', badge:'TOP RATED', badgeColor:'bg-accent-500' },
+  { name:'Kajaria Vitrified Tiles 2x2', brand:'Kajaria', price:'₹48', old:'₹65', off:'26%', rating:'4.3', reviews:'1.5K', imgKey:'tiles', badge:'', badgeColor:'' },
+  { name:'Supreme CPVC Pipe 25mm', brand:'Supreme', price:'₹185', old:'₹220', off:'16%', rating:'4.6', reviews:'987', imgKey:'pipes', badge:'FREE DELIVERY', badgeColor:'bg-green-600' },
+  { name:'Asian Paints Royale 10L', brand:'Asian Paints', price:'₹3,200', old:'₹3,850', off:'17%', rating:'4.9', reviews:'3.4K', imgKey:'paint', badge:'PREMIUM', badgeColor:'bg-navy-900' },
+  { name:'Red Clay Bricks First Class', brand:'Local', price:'₹8', old:'₹12', off:'33%', rating:'4.2', reviews:'654', imgKey:'bricks', badge:'', badgeColor:'' },
+  { name:'Century Ply MR Grade 18mm', brand:'Century Ply', price:'₹1,850', old:'₹2,200', off:'16%', rating:'4.5', reviews:'1.2K', imgKey:'plywood', badge:'TRENDING', badgeColor:'bg-brand-600' },
+  { name:'River Sand Grade A', brand:'River Sand', price:'₹2,200', old:'₹2,800', off:'21%', rating:'4.1', reviews:'432', imgKey:'sand', badge:'BULK DEAL', badgeColor:'bg-green-600' },
+  { name:'GI Corrugated Roofing Sheet', brand:'Tata Shaktee', price:'₹420', old:'₹550', off:'24%', rating:'4.4', reviews:'876', imgKey:'roofing', badge:'', badgeColor:'' },
+  { name:'Havells Switch Board 8 Module', brand:'Havells', price:'₹680', old:'₹850', off:'20%', rating:'4.7', reviews:'1.1K', imgKey:'electrical', badge:'', badgeColor:'' },
+];
+
+const suppliers = [
+  { initials:'SK', name:'Shree Krishna Materials', loc:'Mumbai, MH', rating:'4.8', reviews:'1,247', resp:'92%', tags:['Cement','Steel','Sand','+8'], grad:'from-brand-500 to-brand-700' },
+  { initials:'GR', name:'Ganesh Roofing Solutions', loc:'Ahmedabad, GJ', rating:'4.7', reviews:'856', resp:'88%', tags:['Roofing','GI Pipes','Purlins','+5'], grad:'from-blue-500 to-blue-700' },
+  { initials:'PS', name:'Patel Sanitary Hub', loc:'Rajkot, GJ', rating:'4.9', reviews:'2,103', resp:'95%', tags:['CPVC','Fittings','Taps','+12'], grad:'from-emerald-500 to-emerald-700' },
+  { initials:'RM', name:'Ramesh Marble & Tiles', loc:'Jaipur, RJ', rating:'4.6', reviews:'943', resp:'90%', tags:['Marble','Granite','Tiles','+6'], grad:'from-purple-500 to-purple-700' },
+  { initials:'AK', name:'Agarwal Electricals', loc:'Delhi, DL', rating:'4.4', reviews:'678', resp:'87%', tags:['Wires','Switches','MCB','+15'], grad:'from-amber-500 to-amber-700' },
+];
+
+const deals = [
+  { name:'Ultratech Cement 50 Bag Combo', price:'₹18,500', old:'₹22,500', off:'18%', claimed:72, imgKey:'cement' },
+  { name:'Tata Tiscon 5MT Bundle', price:'₹2,95,000', old:'₹3,40,000', off:'13%', claimed:45, imgKey:'steel' },
+  { name:'Complete Bathroom Kit', price:'₹45,999', old:'₹62,000', off:'26%', claimed:88, imgKey:'bathroom' },
+  { name:'Kajaria Tiles 500 sq.ft Pack', price:'₹17,000', old:'₹25,000', off:'32%', claimed:60, imgKey:'tiles' },
+];
+
+// ===== RENDER HELPERS =====
+function renderProductCard(p) {
+  return `
+    <div class="prod-card bg-white rounded-xl border border-gray-100 overflow-hidden" onclick="openProductDetail('${p.imgKey}','${p.name.replace(/'/g,"\\'")}','${p.price}','${p.old}','${p.off}')">
+      <div class="relative aspect-square bg-gray-50">
+        <img src="${img(IMG[p.imgKey], 400, 400)}" class="img-cover" alt="${p.name}" loading="lazy">
+        ${p.badge ? `<span class="absolute top-2 left-2 ${p.badgeColor} text-white text-[9px] font-bold px-1.5 py-0.5 rounded">${p.badge}</span>` : ''}
+        <button onclick="event.stopPropagation();toggleWish(this)" class="absolute top-2 right-2 w-7 h-7 bg-white/90 rounded-full flex items-center justify-center">
+          <span class="iconify text-gray-400 text-base wish-icon" data-icon="mdi:heart-outline"></span>
+        </button>
+      </div>
+      <div class="p-2.5">
+        <p class="text-[9px] font-bold text-brand-600 uppercase tracking-wider">${p.brand}</p>
+        <p class="text-xs font-semibold text-gray-900 mt-0.5 line-clamp-2 leading-snug">${p.name}</p>
+        <div class="flex items-baseline gap-1 mt-1.5">
+          <span class="text-sm font-bold text-navy-900">${p.price}</span>
+          <span class="text-[10px] text-gray-400 line-through">${p.old}</span>
+        </div>
+        <div class="flex items-center gap-0.5 mt-1">
+          <span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span>
+          <span class="text-[10px] font-semibold">${p.rating}</span>
+          <span class="text-[10px] text-gray-400">(${p.reviews})</span>
+        </div>
+        <button onclick="event.stopPropagation();openInquiryFor('${p.name} – ${p.price}')" class="w-full mt-2 py-1.5 bg-brand-600 text-white text-[11px] font-semibold rounded-lg active:bg-brand-700">Get Quote</button>
+      </div>
+    </div>`;
+}
+
+function renderSupplierCard(s) {
+  return `
+    <div class="w-[260px] bg-white rounded-xl border border-gray-100 p-3.5" onclick="openSupplierDetail('${s.initials}','${s.name.replace(/'/g,"\\'")}','${s.loc}')">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 bg-gradient-to-br ${s.grad} rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${s.initials}</div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1"><p class="text-xs font-bold text-gray-900 truncate">${s.name}</p><span class="iconify text-blue-500 text-sm flex-shrink-0" data-icon="mdi:check-decagram"></span></div>
+          <p class="text-[10px] text-gray-500">${s.loc} · ${s.rating}★ · ${s.resp} Response</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-1 mt-2.5">${s.tags.map(t=>`<span class="px-1.5 py-0.5 bg-gray-100 rounded text-[9px] text-gray-600">${t}</span>`).join('')}</div>
+      <button onclick="event.stopPropagation();openInquiryFor('${s.name}')" class="w-full mt-3 py-2 border border-brand-600 text-brand-600 text-[11px] font-semibold rounded-lg active:bg-brand-50">Contact</button>
+    </div>`;
+}
+
+// ===== POPULATE PAGES =====
+// Home Products Grid (first 4)
+document.getElementById('homeProductsGrid').innerHTML = products.slice(0,4).map(renderProductCard).join('');
+
+// Home Suppliers Scroll
+document.getElementById('homeSuppliersScroll').innerHTML = suppliers.slice(0,3).map(renderSupplierCard).join('');
+
+// Categories Grid
+document.getElementById('catGrid').innerHTML = categories.map(c => `
+  <button class="cat-item bg-white rounded-xl border border-gray-100 overflow-hidden" onclick="switchPage('products')">
+    <div class="aspect-square bg-gray-50"><img src="${img(IMG[c.imgKey], 200, 200)}" class="img-cover" alt="${c.name}" loading="lazy"></div>
+    <div class="p-2 text-center">
+      <p class="text-[10px] font-semibold text-gray-800 leading-tight">${c.name}</p>
+      <p class="text-[8px] text-gray-400">${c.count}</p>
+    </div>
+  </button>`).join('');
+
+// Products Page (all)
+document.getElementById('productsGridPage').innerHTML = products.map(renderProductCard).join('');
+
+// Deals List
+document.getElementById('dealsList').innerHTML = deals.map(d => `
+  <div class="prod-card bg-white rounded-xl border border-gray-100 overflow-hidden flex" onclick="openInquiryFor('${d.name} – ${d.price}')">
+    <div class="w-28 flex-shrink-0 bg-gray-50"><img src="${img(IMG[d.imgKey], 300, 300)}" class="img-cover" alt="${d.name}" loading="lazy"></div>
+    <div class="p-3 flex-1 flex flex-col justify-between">
+      <div>
+        <p class="text-[9px] font-bold text-brand-600">DEAL OF THE DAY</p>
+        <p class="text-xs font-semibold text-gray-900 mt-0.5 line-clamp-2">${d.name}</p>
+        <div class="flex items-baseline gap-1 mt-1"><span class="text-base font-bold text-navy-900">${d.price}</span><span class="text-[10px] text-gray-400 line-through">${d.old}</span><span class="text-[10px] font-bold text-green-600">${d.off} OFF</span></div>
+      </div>
+      <div><div class="bg-gray-100 rounded-full h-1.5"><div class="bg-brand-600 h-1.5 rounded-full" style="width:${d.claimed}%"></div></div><p class="text-[9px] text-gray-400 mt-0.5">${d.claimed}% claimed</p></div>
+    </div>
+  </div>`).join('');
+
+// Suppliers List
+document.getElementById('suppliersList').innerHTML = suppliers.map(s => `
+  <div class="prod-card bg-white rounded-xl border border-gray-100 p-3.5" onclick="openSupplierDetail('${s.initials}','${s.name.replace(/'/g,"\\'")}','${s.loc}')">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 bg-gradient-to-br ${s.grad} rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0">${s.initials}</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1"><p class="text-sm font-bold text-gray-900 truncate">${s.name}</p><span class="iconify text-blue-500 text-sm flex-shrink-0" data-icon="mdi:check-decagram"></span></div>
+        <p class="text-[10px] text-gray-500">${s.loc}</p>
+        <div class="flex items-center gap-3 mt-0.5"><span class="flex items-center gap-0.5 text-[10px]"><span class="iconify text-amber-400" data-icon="mdi:star"></span>${s.rating} (${s.reviews})</span><span class="text-[10px] text-gray-400">${s.resp} Response</span></div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-1 mt-2.5">${s.tags.map(t=>`<span class="px-1.5 py-0.5 bg-gray-100 rounded text-[9px] text-gray-600">${t}</span>`).join('')}</div>
+    <button onclick="event.stopPropagation();openInquiryFor('${s.name}')" class="w-full mt-3 py-2 border border-brand-600 text-brand-600 text-[11px] font-semibold rounded-lg active:bg-brand-50">Contact Supplier</button>
+  </div>`).join('');
+
+// ===== NAVIGATION =====
+const pageMap = {home:0,categories:1,deals:2,suppliers:3,profile:4};
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach((n,i)=>n.classList.toggle('active',i===pageMap[name]));
+  const sc = document.querySelector('.page.active .app-content');
+  if(sc) sc.scrollTo(0,0);
+}
+
+// ===== BOTTOM SHEETS =====
+function openSheet(id) {
+  const o=document.getElementById(id.replace('Sheet','Overlay')), s=document.getElementById(id);
+  if(o) o.classList.add('active');
+  s.classList.add('active');
+  setTimeout(()=>{const i=s.querySelector('input');if(i)i.focus();},350);
+}
+function closeSheet(id) {
+  const o=document.getElementById(id.replace('Sheet','Overlay')), s=document.getElementById(id);
+  if(o) o.classList.remove('active');
+  s.classList.remove('active');
+}
+
+// ===== TOAST =====
+let toastTimeout;
+function showToast(msg,icon='mdi:check-circle') {
+  const t=document.getElementById('appToast');
+  document.getElementById('toastText').textContent=msg;
+  document.getElementById('toastIcon').setAttribute('data-icon',icon);
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ===== CART =====
+let cartCount=0, cartItems=[];
+function addToCart(name) {
+  cartCount++; cartItems.push(name);
+  const b=document.getElementById('cartBadge');
+  b.textContent=cartCount; b.classList.remove('hidden'); b.classList.add('badge-bounce');
+  setTimeout(()=>b.classList.remove('badge-bounce'),400);
+  updateCartSheet();
+  showToast(name+' added to cart');
+}
+function updateCartSheet() {
+  if(!cartItems.length) return;
+  const c=document.getElementById('cartContent'), u=[...new Set(cartItems)];
+  c.innerHTML=`<h3 class="text-lg font-serif font-bold text-gray-900 mb-3">Cart (${cartCount})</h3>
+    <div class="space-y-2 mb-4">${u.map(i=>`<div class="flex items-center gap-3 p-2.5 bg-gray-50 rounded-xl">
+      <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center"><span class="iconify text-2xl text-gray-400" data-icon="mdi:package-variant"></span></div>
+      <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-gray-900 truncate">${i}</p><p class="text-[10px] text-gray-500">Qty: ${cartItems.filter(c=>c===i).length}</p></div>
+    </div>`).join('')}</div>
+    <button onclick="closeSheet('cartSheet');showToast('Order placed!','mdi:check-circle')" class="w-full py-3 bg-brand-600 text-white text-sm font-semibold rounded-xl">Proceed to Checkout</button>`;
+}
+
+// ===== WISHLIST =====
+function toggleWish(btn) {
+  const i=btn.querySelector('.wish-icon'), f=i.getAttribute('data-icon')==='mdi:heart';
+  i.setAttribute('data-icon',f?'mdi:heart-outline':'mdi:heart');
+  i.classList.toggle('text-brand-600',!f); i.classList.toggle('text-gray-400',f);
+  showToast(f?'Removed from wishlist':'Added to wishlist',f?'mdi:heart-outline':'mdi:heart');
+}
+
+// ===== INQUIRY =====
+function openInquiryFor(p) { document.getElementById('inquiryProductName').textContent=p; openSheet('inquirySheet'); }
+function sendInquiry() { closeSheet('inquirySheet'); showToast('Inquiry sent! Suppliers will contact you'); }
+
+// ===== LOGIN =====
+function handleLogin() { closeSheet('loginSheet'); showToast('OTP sent to your mobile','mdi:message-text'); }
+
+// ===== SEARCH =====
+function doSearch(term) { closeSheet('searchSheet'); switchPage('products'); showToast('Searching: '+term,'mdi:magnify'); }
+
+// ===== PRODUCT DETAIL =====
+function openProductDetail(imgKey,name,price,old,off) {
+  document.getElementById('productDetailImg').src=img(IMG[imgKey],800,600);
+  document.getElementById('productDetailName').textContent=name;
+  document.getElementById('productDetailPrice').textContent=price;
+  document.getElementById('productDetailOld').textContent=old;
+  document.getElementById('productDetailOff').textContent=off+' OFF';
+  openSheet('productSheet');
+}
+
+// ===== SUPPLIER DETAIL =====
+function openSupplierDetail(initials,name,loc) {
+  document.getElementById('supplierDetailInitials').textContent=initials;
+  document.getElementById('supplierDetailName').textContent=name;
+  document.getElementById('supplierDetailLoc').textContent=loc+' · Since 2015';
+  openSheet('supplierSheet');
+}
+
+// ===== BANNER CAROUSEL =====
+const bannerScroll=document.getElementById('bannerScroll'), bannerDots=document.getElementById('bannerDots');
+let currentBanner=0;
+bannerScroll.addEventListener('scroll',()=>{
+  const idx=Math.round(bannerScroll.scrollLeft/bannerScroll.offsetWidth);
+  if(idx!==currentBanner){currentBanner=idx;[...bannerDots.children].forEach((d,i)=>{d.className=i===idx?'w-5 h-1.5 bg-brand-600 rounded-full transition-all':'w-1.5 h-1.5 bg-gray-300 rounded-full transition-all';});}
+});
+setInterval(()=>{currentBanner=(currentBanner+1)%3;bannerScroll.scrollTo({left:currentBanner*bannerScroll.offsetWidth,behavior:'smooth'});},4000);
+
+// ===== DEAL TIMER =====
+let totalSec=2*3600+45*60+18;
+function updateTimer(){
+  if(totalSec<=0)return;totalSec--;
+  const h=Math.floor(totalSec/3600),m=Math.floor((totalSec%3600)/60),s=totalSec%60,p=n=>String(n).padStart(2,'0');
+  const t=document.getElementById('dealTimer');if(t)t.textContent=`${p(h)}:${p(m)}:${p(s)}`;
+  const he=document.getElementById('hrs'),me=document.getElementById('mins'),se=document.getElementById('secs');
+  if(he)he.textContent=p(h);if(me)me.textContent=p(m);if(se)se.textContent=p(s);
+}
+setInterval(updateTimer,1000);
+</script>
+</body>
+</html>
